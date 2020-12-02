@@ -18,4 +18,7 @@ The default location for the YAML configuration file is:
 test-bedrock-module:
   foo: fromYaml
   overwriteMe: fromYaml
+another-bedrock-module:
+  host: example.com
+  port: 18443
 ```
