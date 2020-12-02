@@ -1,0 +1,3 @@
+test-bedrock-module:
+  foo: fromYaml
+  overwriteMe: fromYaml

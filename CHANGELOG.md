@@ -1,4 +1,4 @@
-# bedrock-module-template-http ChangeLog
+# bedrock-config-yaml ChangeLog
 
 ## 1.0.0 - TBD
 

@@ -1,15 +1,18 @@
 {
-  "name": "bedrock-module-template-http",
+  "name": "bedrock-config-yaml",
   "version": "0.0.1-0",
-  "description": "Bedrock HTTP API",
+  "description": "Bedrock Config YAML",
   "main": "./lib",
-  "scripts": {},
+  "scripts": {
+    "lint": "eslint ."
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/digitalbazaar/bedrock-module-template-http"
+    "url": "https://github.com/digitalbazaar/bedrock-config-yaml"
   },
   "keywords": [
-    "bedrock"
+    "bedrock",
+    "yaml"
   ],
   "author": {
     "name": "Digital Bazaar, Inc.",
@@ -17,13 +20,15 @@
     "url": "https://digitalbazaar.com"
   },
   "bugs": {
-    "url": "https://github.com/digitalbazaar/bedrock-module-template-http/issues"
+    "url": "https://github.com/digitalbazaar/bedrock-config-yaml/issues"
   },
-  "homepage": "https://github.com/digitalbazaar/bedrock-module-template-http",
-  "dependencies": {},
+  "homepage": "https://github.com/digitalbazaar/bedrock-config-yaml",
+  "dependencies": {
+    "esm": "3.2.25",
+    "js-yaml": "^3.14.0"
+  },
   "peerDependencies": {
-    "bedrock": "^3.1.0",
-    "bedrock-express": "^3.1.0"
+    "bedrock": "^3.1.0"
   },
   "directories": {
     "lib": "./lib"
