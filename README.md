@@ -8,6 +8,11 @@ there is no YAML configuration file found in the location specified by the
 configuration changes are applied.
 
 ## Usage
+To ensure that no other module will override the YAML configuration,
+`bedrock-config-yaml` should be the last import before `bedrock.start()` is
+called. If `bedrock-config-yaml` is not the last `bedrock.configure` event
+handler, an error will be thrown that will prevent application startup.
+
 The default location for the YAML configuration file is:
 ```
 /etc/bedrock-config/config.yaml
