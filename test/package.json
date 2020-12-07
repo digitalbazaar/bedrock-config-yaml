@@ -9,7 +9,7 @@
     "coverage-report": "nyc report"
   },
   "dependencies": {
-    "bedrock": "^3.0.0",
+    "bedrock": "^4.0.0",
     "bedrock-config-yaml": "file:..",
     "bedrock-test": "^5.0.0",
     "cross-env": "^7.0.3",
