@@ -28,7 +28,7 @@
     "js-yaml": "^3.14.0"
   },
   "peerDependencies": {
-    "bedrock": "^3.1.0"
+    "bedrock": "^4.0.0"
   },
   "directories": {
     "lib": "./lib"
