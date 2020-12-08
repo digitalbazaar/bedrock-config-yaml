@@ -10,15 +10,36 @@ configuration changes are applied.
 ## Usage
 To ensure that no other module will override the YAML configuration,
 `bedrock-config-yaml` should be the last import before `bedrock.start()` is
-called. If `bedrock-config-yaml` is not the last `bedrock.configure` event
-handler, an error will be thrown that will prevent application startup.
+called. If `bedrock-config-yaml` is not the last `bedrock-cli.parsed` or
+`bedrock.configure` event handler, an error will be thrown that will prevent
+application startup.
 
-The default location for the YAML configuration file is:
-```
-/etc/bedrock-config/config.yaml
+There are two separate configuration files that are applied when different
+events occur during Bedrock startup: `core` and `app`.
+
+### Core Config
+The `core` config is used to configure core Bedrock features such as the
+number of workers or the default log formatter. The `core` config is applied by
+the last handler for the `bedrock-cli.parsed` event.  The default location for
+the `core` config is: `/etc/bedrock-config/core.yaml`.
+
+#### Sample `core.yaml`
+```yaml
+core:
+  workers: 2
+loggers:
+  console:
+    bedrock:
+      formatter: logstash
 ```
 
-### Sample `config.yaml`
+### App Config
+The `app` config is used to configure Bedrock application/module features.
+The `app` config is applied by the last handler for the `bedrock.configure`
+event. The default location for the `app` config is:
+`/etc/bedrock-config/app.yaml`.
+
+#### Sample `app.yaml`
 ```yaml
 test-bedrock-module:
   foo: fromYaml
