@@ -1,0 +1,3 @@
+loggers:
+  console:
+    someLoggerConfig: foo
