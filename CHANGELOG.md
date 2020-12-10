@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## 2.0.0 - TBD
+## 2.0.0 - 2020-12-09
 
 ### Changed:
 - Implement separate YAML files for `core` and `app` configuration.
