@@ -10,6 +10,7 @@ describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
     const testBedrockModuleConfig = {
       bar: 'fromBedrockConfig',
+      combinedAppValue: 'hPtQMAHvzECxDRJd',
       foo: 'fromYaml',
       overwriteMe: 'fromYaml',
     };
@@ -20,5 +21,9 @@ describe('bedrock-config-yaml', () => {
     should.exist(config.loggers.console.someLoggerConfig);
     config.loggers.console.someLoggerConfig.should.be.a('string');
     config.loggers.console.someLoggerConfig.should.equal('foo');
+    should.exist(config.loggers.console.someLoggerCombinedConfig);
+    config.loggers.console.someLoggerCombinedConfig.should.be.a('string');
+    config.loggers.console.someLoggerCombinedConfig
+      .should.equal('FDRqpNJLVkgfVxPe');
   });
 });

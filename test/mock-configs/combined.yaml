@@ -1,0 +1,7 @@
+app:
+  test-bedrock-module:
+    combinedAppValue: hPtQMAHvzECxDRJd
+core:
+  loggers:
+    console:
+      someLoggerCombinedConfig: FDRqpNJLVkgfVxPe

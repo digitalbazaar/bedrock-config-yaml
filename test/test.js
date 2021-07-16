@@ -7,6 +7,7 @@ const {config} = bedrock;
 require('bedrock-config-yaml');
 
 config['config-yaml'].app.path = path.join(__dirname, 'mock-configs');
+config['config-yaml'].combined.path = path.join(__dirname, 'mock-configs');
 config['config-yaml'].core.path = path.join(__dirname, 'mock-configs');
 
 // config for mock test-bedrock-module
