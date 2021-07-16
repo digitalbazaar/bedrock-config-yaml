@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## 2.1.0 - TBD
+## 2.1.0 - 2021-07-16
 
 ### Added:
 - Add support for a `combined.yaml` file that may contain both an `app` and
