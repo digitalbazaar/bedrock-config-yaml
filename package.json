@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/digitalbazaar/bedrock-config-yaml",
   "dependencies": {
+    "@google-cloud/secret-manager": "^3.9.0",
     "esm": "3.2.25",
     "js-yaml": "^3.14.0"
   },
