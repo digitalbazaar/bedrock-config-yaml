@@ -1,10 +1,7 @@
-/*
- * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
+/*!
+ * Copyright (c) 2020-2022 Digital Bazaar, Inc. All rights reserved.
  */
-'use strict';
-
-const bedrock = require('bedrock');
-const {config} = bedrock;
+import {config} from 'bedrock';
 
 describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
