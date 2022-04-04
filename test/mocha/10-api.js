@@ -1,7 +1,7 @@
 /*!
  * Copyright (c) 2020-2022 Digital Bazaar, Inc. All rights reserved.
  */
-import {config} from 'bedrock';
+import {config} from '@bedrock/core';
 
 describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
