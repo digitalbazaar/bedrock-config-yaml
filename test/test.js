@@ -6,6 +6,7 @@ import {fileURLToPath} from 'url';
 import path from 'path';
 import '@bedrock/config-yaml';
 
+const {config} = bedrock;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 config['config-yaml'].app.path = path.join(__dirname, 'mock-configs');
