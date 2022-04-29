@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/digitalbazaar/bedrock-config-yaml",
   "dependencies": {
-    "js-yaml": "^3.14.0"
+    "js-yaml": "^3.14.1"
   },
   "peerDependencies": {
     "@bedrock/core": "^6.0.0"
