@@ -25,12 +25,21 @@ describe('bedrock-config-yaml', () => {
       .should.equal('FDRqpNJLVkgfVxPe');
   });
   it('configuration can be loaded via environment variable', async () => {
-    process.env.BEDROCK_CONFIG = 'dGVzdC1iZWRyb2NrLWVudi15YW1sOgogIHRlc3RFb' +
-      'nZWYWx1ZTogMTIzMTIzMTIzMTIz';
+    process.env.BEDROCK_CONFIG = 'YXBwOgogIHRlc3QtYmVkcm9jay1lbnYteWFtbDoKI' +
+      'CAgIHRlc3RFbnZWYWx1ZTogMTIzMTIzMTIzMTIzCmNvcmU6CiAgdGVzdC1jb3JlLWVud' +
+      'jogOTg3NTUzIA==';
 
     should.not.exist(config['test-bedrock-env-yaml']);
-    _applyConfigFromEnv();
+    should.not.exist(config['test-core-env']);
 
+    _applyConfigFromEnv({configType: 'core'});
+
+    should.not.exist(config['test-bedrock-env-yaml']);
+    config['test-core-env'].should.eql(987553);
+
+    _applyConfigFromEnv({configType: 'app'});
+
+    config['test-core-env'].should.eql(987553);
     config['test-bedrock-env-yaml'].should.eql({
       testEnvValue: 123123123123
     });
