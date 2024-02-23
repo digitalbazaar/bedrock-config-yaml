@@ -1,5 +1,11 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.1.0 - 2024-02-xx
+
+### Added:
+- Add support for loading a base64 encoded yaml config from `BEDROCK_CONFIG`
+  environment variable.
+
 ## 4.0.0 - 2022-04-29
 
 ### Changed
