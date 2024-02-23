@@ -48,3 +48,8 @@ another-bedrock-module:
   host: example.com
   port: 18443
 ```
+
+### Loading From Environment Variable
+It is possible to load the config YAML from a `BEDROCK_CONFIG` environment
+variable. The value is a base64 encoded version of the entire YAML config file.
+If this variable is found, the filesystem based config setup will be skipped.
