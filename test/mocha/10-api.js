@@ -2,7 +2,7 @@
  * Copyright (c) 2020-2022 Digital Bazaar, Inc. All rights reserved.
  */
 import {config} from '@bedrock/core';
-import {applyConfigFromEnv} from '@bedrock/config-yaml';
+import {_applyConfigFromEnv} from '@bedrock/config-yaml';
 
 describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
@@ -28,7 +28,8 @@ describe('bedrock-config-yaml', () => {
     process.env.BEDROCK_CONFIG = 'dGVzdC1iZWRyb2NrLWVudi15YW1sOgogIHRlc3RFb' +
       'nZWYWx1ZTogMTIzMTIzMTIzMTIz';
 
-    applyConfigFromEnv();
+    should.not.exist(config['test-bedrock-env-yaml']);
+    _applyConfigFromEnv();
 
     config['test-bedrock-env-yaml'].should.eql({
       testEnvValue: 123123123123
