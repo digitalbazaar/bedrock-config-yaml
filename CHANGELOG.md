@@ -1,5 +1,10 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.2.0 - 2024-02-28
+
+### Changed
+- Relicense under the Apache-2.0 license.
+
 ## 4.1.0 - 2024-02-24
 
 ### Added:
