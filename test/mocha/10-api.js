@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {config} from '@bedrock/core';
 import {_applyConfigFromEnv} from '@bedrock/config-yaml';
+import {config} from '@bedrock/core';
 
 describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
