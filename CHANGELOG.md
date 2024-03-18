@@ -1,5 +1,10 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.3.0 - 2024-xx-xx
+
+### Changed
+- Update to `js-yaml@4`.
+
 ## 4.2.0 - 2024-02-28
 
 ### Changed
