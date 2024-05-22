@@ -1,6 +1,6 @@
 {
   "name": "@bedrock/config-yaml",
-  "version": "4.2.1-0",
+  "version": "4.3.0",
   "type": "module",
   "description": "Bedrock Config YAML",
   "license": "Apache-2.0",
