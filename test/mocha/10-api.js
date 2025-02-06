@@ -80,6 +80,7 @@ describe('bedrock-config-yaml', () => {
     });
 
     expect(output).to.not.include('1337');
+    expect(output).to.not.include('hello-world');
   });
   it('does not expose data when a load from config error throws', async () => {
     const origConfig = config['config-yaml'].app;
