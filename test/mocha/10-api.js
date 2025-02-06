@@ -96,6 +96,6 @@ describe('bedrock-config-yaml', () => {
     }
 
     expect(output).to.not.include('1337');
-    expect(output).to.not.include('hello-world');    
+    expect(output).to.not.include('hello-world');
   });
 });
