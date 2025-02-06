@@ -15,9 +15,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import {config, events} from '@bedrock/core';
 import {_applyConfigFromEnv} from '@bedrock/config-yaml';
-import {config} from '@bedrock/core';
+import {expect} from 'chai';
 
 describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
@@ -58,5 +58,42 @@ describe('bedrock-config-yaml', () => {
     config['test-bedrock-env-yaml'].should.eql({
       testEnvValue: 123123123123
     });
+  });
+  it('does not expose data when a load from env error throws', async () => {
+    // Include a bad config with duplicate key
+    const yaml = `
+    app:
+      sensitive: 1337
+      sensitive: hello-world
+    core:
+      test-core-env: 987553
+    `;
+
+    const encodedConfig = Buffer.from(yaml).toString('base64');
+    process.env.BEDROCK_CONFIG = encodedConfig;
+
+    let output = '';
+    await events.emit('bedrock.configure').catch(e => {
+      output = e.message;
+    }).finally(() => {
+      delete process.env.BEDROCK_CONFIG;
+    });
+
+    expect(output).to.not.include('1337');
+  });
+  it('does not expose data when a load from config error throws', async () => {
+    const origConfig = config['config-yaml'].app;
+    let output = '';
+
+    try {
+      origConfig.filename = 'invalid.yaml';
+      await events.emit('bedrock.configure').catch(e => {
+        output = e.message;
+      });
+    } finally {
+      config['config-yaml'].app = origConfig;
+    }
+
+    expect(output).to.not.include('1337');
   });
 });

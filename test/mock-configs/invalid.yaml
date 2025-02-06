@@ -1,0 +1,5 @@
+app:
+  sensitive: 1337
+  sensitive: hello-world
+core:
+  test-core-env: 987553
