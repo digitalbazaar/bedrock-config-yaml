@@ -1,5 +1,10 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.3.2 - 2025-02-06
+
+### Fixed
+- Use standard publishing process.
+
 ## 4.3.1 - 2025-02-06
 
 ### Fixed
