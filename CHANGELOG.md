@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## 4.3.1 - 2025-mm-dd
+## 4.3.1 - 2025-02-06
 
 ### Fixed
 - Capture any errors during config yaml load to avoid leaking sensitive values.
