@@ -16,15 +16,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as chai from 'chai';
-import {config, events} from '@bedrock/core';
+import {config, events, loggers} from '@bedrock/core';
 import {_applyConfigFromEnv} from '@bedrock/config-yaml';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
+import winston from 'winston';
 
 chai.use(chaiAsPromised);
 
 const {expect} = chai;
 
 describe('bedrock-config-yaml', () => {
+  let spy;
+
+  beforeEach(() => {
+    spy = sinon.spy();
+    const logger = loggers.get('app').child('bedrock-config-yaml');
+
+    const spyTransport = new winston.transports.Console({
+      log(info, callback) {
+        spy(info);
+        callback();
+      },
+    });
+
+    logger.configure({
+      level: 'debug',
+      transports: [],
+    });
+    logger.add(spyTransport);
+  });
+
   it('app yaml configuration should be merged into bedrock config', () => {
     const testBedrockModuleConfig = {
       bar: 'fromBedrockConfig',
@@ -141,5 +163,22 @@ describe('bedrock-config-yaml', () => {
 
     expect(output).to.not.include('1337');
     expect(output).to.not.include('hello-world');
+  });
+  it('logs but does not fail when config does not exist', async () => {
+    const origConfig = config['config-yaml'].app;
+
+    try {
+      origConfig.filename = 'doesnotexist.yaml';
+      await events.emit('bedrock.configure');
+    } finally {
+      config['config-yaml'].app = origConfig;
+    }
+
+    sinon.assert.calledWith(spy, sinon.match({
+      level: 'debug',
+      message:
+        sinon.match('"app" configuration not found')
+          .and(sinon.match('doesnotexist.yaml'))
+    }));
   });
 });
