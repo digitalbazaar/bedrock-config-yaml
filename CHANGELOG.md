@@ -1,5 +1,10 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.3.3 - 2025-mm-dd
+
+### Changed
+- Added test expecting error when config is invalid.
+
 ## 4.3.2 - 2025-02-06
 
 ### Fixed
