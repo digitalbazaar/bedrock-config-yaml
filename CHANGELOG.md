@@ -4,6 +4,7 @@
 
 ### Changed
 - Added test expecting error when config is invalid.
+- Refactor fs sync to async methods for exists and read (issue #4).
 
 ## 4.3.2 - 2025-02-06
 
