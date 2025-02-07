@@ -16,7 +16,8 @@
     "c8": "^7.11.0",
     "chai": "^5.1.2",
     "chai-as-promised": "^8.0.1",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "sinon": "^19.0.2"
   },
   "c8": {
     "excludeNodeModules": false,
