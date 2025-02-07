@@ -15,9 +15,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as chai from 'chai';
 import {config, events} from '@bedrock/core';
 import {_applyConfigFromEnv} from '@bedrock/config-yaml';
-import {expect} from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+
+chai.use(chaiAsPromised);
+
+const {expect} = chai;
 
 describe('bedrock-config-yaml', () => {
   it('app yaml configuration should be merged into bedrock config', () => {
@@ -59,9 +64,48 @@ describe('bedrock-config-yaml', () => {
       testEnvValue: 123123123123
     });
   });
+  it('throws `BEDROCK_CONFIG is invalid` error when env config is invalid',
+    async () => {
+      const duplicateKeyConfig = `
+      app:
+        sensitive: 1337
+        sensitive: hello-world
+      core:
+        test-core-env: 987553
+      `;
+
+      const encodedConfig = Buffer.from(duplicateKeyConfig).toString('base64');
+
+      const loadBadConfigFn = async () => {
+        process.env.BEDROCK_CONFIG = encodedConfig;
+        return events.emit('bedrock.configure').finally(() => {
+          delete process.env.BEDROCK_CONFIG;
+        });
+      };
+
+      await expect(loadBadConfigFn()).to.be.rejectedWith(Error,
+        'BEDROCK_CONFIG is invalid'
+      );
+    }
+  );
+  it('throws `bedrock config is invalid` error when config is invalid',
+    async () => {
+      const origConfig = config['config-yaml'].app;
+
+      const loadBadConfigFn = async () => {
+        origConfig.filename = 'invalid.yaml';
+        return events.emit('bedrock.configure').finally(() => {
+          config['config-yaml'].app = origConfig;
+        });
+      };
+
+      await expect(loadBadConfigFn()).to.be.rejectedWith(Error,
+        'bedrock config is invalid'
+      );
+    }
+  );
   it('does not expose data when a load from env error throws', async () => {
-    // Include a bad config with duplicate key
-    const yaml = `
+    const duplicateKeyConfig = `
     app:
       sensitive: 1337
       sensitive: hello-world
@@ -69,7 +113,7 @@ describe('bedrock-config-yaml', () => {
       test-core-env: 987553
     `;
 
-    const encodedConfig = Buffer.from(yaml).toString('base64');
+    const encodedConfig = Buffer.from(duplicateKeyConfig).toString('base64');
     process.env.BEDROCK_CONFIG = encodedConfig;
 
     let output = '';
