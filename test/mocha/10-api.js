@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 - 2024 Digital Bazaar, Inc.
+ * Copyright 2020 - 2026 Digital Bazaar, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,12 +37,12 @@ describe('bedrock-config-yaml', () => {
       log(info, callback) {
         spy(info);
         callback();
-      },
+      }
     });
 
     logger.configure({
       level: 'debug',
-      transports: [],
+      transports: []
     });
     logger.add(spyTransport);
   });
@@ -52,7 +52,7 @@ describe('bedrock-config-yaml', () => {
       bar: 'fromBedrockConfig',
       combinedAppValue: 'hPtQMAHvzECxDRJd',
       foo: 'fromYaml',
-      overwriteMe: 'fromYaml',
+      overwriteMe: 'fromYaml'
     };
 
     config['test-bedrock-module'].should.eql(testBedrockModuleConfig);

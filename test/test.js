@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 - 2024 Digital Bazaar, Inc.
+ * Copyright 2020 - 2026 Digital Bazaar, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ config['config-yaml'].core.path = path.join(__dirname, 'mock-configs');
 // config for mock test-bedrock-module
 config['test-bedrock-module'] = {
   bar: 'fromBedrockConfig',
-  overwriteMe: 'fromBedrockConfig',
+  overwriteMe: 'fromBedrockConfig'
 };
 
 import '@bedrock/test';
