@@ -1,5 +1,16 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.4.0 - 2026-06-xx
+
+### Changed
+- Update dependencies:
+  - `js-yaml@4.2.0` (security fixes)
+- Update minor, dev, and test dependencies.
+- **NOTE**: Update supported platforms.
+  - Test on Node.js >=22.
+  - Update `engines.node` to `>=22`.
+  - See README requirements section.
+
 ## 4.3.3 - 2025-02-07
 
 ### Changed
