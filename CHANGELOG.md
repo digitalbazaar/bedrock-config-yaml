@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## 4.4.0 - 2026-06-xx
+## 4.4.0 - 2026-06-23
 
 ### Changed
 - Update dependencies:
