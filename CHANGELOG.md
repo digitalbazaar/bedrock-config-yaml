@@ -1,5 +1,13 @@
 # bedrock-config-yaml ChangeLog
 
+## 4.5.0 - 2026-06-xx
+
+### Changed
+- Update dependencies:
+  - `js-yaml@5`
+    - Major update. See changelog and migration guide if needed. Simple YAML
+      likely requires no changes.
+
 ## 4.4.0 - 2026-06-23
 
 ### Changed
