@@ -6,9 +6,10 @@
 - Add support for loading the config from a `BEDROCK_CONFIG_GZIP` environment
   variable containing base64-encoded gzipped YAML. This allows deployments
   that store their config in a size-limited store (such as a 64 KB AWS Secrets
-  Manager secret) to gain roughly 4-6x headroom. `BEDROCK_CONFIG_GZIP` takes
-  precedence over `BEDROCK_CONFIG` when both are set, and is decoded strictly:
-  a value that is not valid gzip fails loudly instead of falling back to
+  Manager secret) to gain roughly 4-6x headroom. Only one of
+  `BEDROCK_CONFIG_GZIP` or `BEDROCK_CONFIG` may be set; setting both is
+  ambiguous and throws. `BEDROCK_CONFIG_GZIP` is decoded strictly: a value
+  that is not valid gzip fails loudly instead of falling back to
   `BEDROCK_CONFIG`. `BEDROCK_CONFIG` behavior is unchanged when
   `BEDROCK_CONFIG_GZIP` is unset.
 

@@ -106,11 +106,13 @@ To inspect one:
 echo "$BEDROCK_CONFIG_GZIP" | base64 -d | gunzip
 ```
 
-If both variables are set, `BEDROCK_CONFIG_GZIP` takes precedence. The value is
-decoded strictly: if `BEDROCK_CONFIG_GZIP` is set but is not valid gzip, startup
-fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than falling back to
-`BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset, `BEDROCK_CONFIG` behaves
-exactly as before.
+Only one of `BEDROCK_CONFIG_GZIP` or `BEDROCK_CONFIG` may be set. Setting both
+is ambiguous and fails at startup rather than silently ignoring one of them.
+
+The value is decoded strictly: if `BEDROCK_CONFIG_GZIP` is set but is not valid
+gzip, startup fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than
+falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
+`BEDROCK_CONFIG` behaves exactly as before.
 
 ## License
 
