@@ -19,11 +19,14 @@ import * as chai from 'chai';
 import {config, events, loggers} from '@bedrock/core';
 import {_applyConfigFromEnv} from '@bedrock/config-yaml';
 import chaiAsPromised from 'chai-as-promised';
-import {gzipSync} from 'node:zlib';
+import {promisify} from 'node:util';
 import sinon from 'sinon';
 import winston from 'winston';
+import zlib from 'node:zlib';
 
 chai.use(chaiAsPromised);
+
+const gzip = promisify(zlib.gzip);
 
 const {expect} = chai;
 
@@ -72,20 +75,24 @@ describe('bedrock-config-yaml', () => {
       'CAgIHRlc3RFbnZWYWx1ZTogMTIzMTIzMTIzMTIzCmNvcmU6CiAgdGVzdC1jb3JlLWVud' +
       'jogOTg3NTUzIA==';
 
-    should.not.exist(config['test-bedrock-env-yaml']);
-    should.not.exist(config['test-core-env']);
+    try {
+      should.not.exist(config['test-bedrock-env-yaml']);
+      should.not.exist(config['test-core-env']);
 
-    _applyConfigFromEnv({configType: 'core'});
+      await _applyConfigFromEnv({configType: 'core'});
 
-    should.not.exist(config['test-bedrock-env-yaml']);
-    config['test-core-env'].should.eql(987553);
+      should.not.exist(config['test-bedrock-env-yaml']);
+      config['test-core-env'].should.eql(987553);
 
-    _applyConfigFromEnv({configType: 'app'});
+      await _applyConfigFromEnv({configType: 'app'});
 
-    config['test-core-env'].should.eql(987553);
-    config['test-bedrock-env-yaml'].should.eql({
-      testEnvValue: 123123123123
-    });
+      config['test-core-env'].should.eql(987553);
+      config['test-bedrock-env-yaml'].should.eql({
+        testEnvValue: 123123123123
+      });
+    } finally {
+      delete process.env.BEDROCK_CONFIG;
+    }
   });
   it('configuration can be loaded via gzip environment variable', async () => {
     const gzipConfig = `
@@ -97,18 +104,18 @@ describe('bedrock-config-yaml', () => {
     `;
 
     process.env.BEDROCK_CONFIG_GZIP =
-      gzipSync(Buffer.from(gzipConfig)).toString('base64');
+      (await gzip(Buffer.from(gzipConfig))).toString('base64');
 
     try {
       should.not.exist(config['test-bedrock-gzip-yaml']);
       should.not.exist(config['test-core-gzip']);
 
-      _applyConfigFromEnv({configType: 'core'});
+      await _applyConfigFromEnv({configType: 'core'});
 
       should.not.exist(config['test-bedrock-gzip-yaml']);
       config['test-core-gzip'].should.eql(987553);
 
-      _applyConfigFromEnv({configType: 'app'});
+      await _applyConfigFromEnv({configType: 'app'});
 
       config['test-core-gzip'].should.eql(987553);
       config['test-bedrock-gzip-yaml'].should.eql({
@@ -118,30 +125,34 @@ describe('bedrock-config-yaml', () => {
       delete process.env.BEDROCK_CONFIG_GZIP;
     }
   });
-  it('gzip environment variable takes precedence over BEDROCK_CONFIG',
+  it('throws when both gzip and plain environment variables are set',
     async () => {
       const gzipConfig = `
       app:
-        test-bedrock-precedence: fromGzip
+        test-bedrock-both-set: fromGzip
       `;
       const plainConfig = `
       app:
-        test-bedrock-precedence: fromPlain
+        test-bedrock-both-set: fromPlain
       `;
 
-      process.env.BEDROCK_CONFIG_GZIP =
-        gzipSync(Buffer.from(gzipConfig)).toString('base64');
-      process.env.BEDROCK_CONFIG =
-        Buffer.from(plainConfig).toString('base64');
+      const loadBothFn = async () => {
+        process.env.BEDROCK_CONFIG_GZIP =
+          (await gzip(Buffer.from(gzipConfig))).toString('base64');
+        process.env.BEDROCK_CONFIG =
+          Buffer.from(plainConfig).toString('base64');
+        return events.emit('bedrock.configure').finally(() => {
+          delete process.env.BEDROCK_CONFIG_GZIP;
+          delete process.env.BEDROCK_CONFIG;
+        });
+      };
 
-      try {
-        await events.emit('bedrock.configure');
-      } finally {
-        delete process.env.BEDROCK_CONFIG_GZIP;
-        delete process.env.BEDROCK_CONFIG;
-      }
+      await expect(loadBothFn()).to.be.rejectedWith(Error,
+        'only one of BEDROCK_CONFIG_GZIP or BEDROCK_CONFIG may be set'
+      );
 
-      config['test-bedrock-precedence'].should.equal('fromGzip');
+      // neither config was applied
+      should.not.exist(config['test-bedrock-both-set']);
     }
   );
   it('throws `BEDROCK_CONFIG_GZIP is invalid` error when value is not gzip',
@@ -176,7 +187,7 @@ describe('bedrock-config-yaml', () => {
       `;
 
       process.env.BEDROCK_CONFIG_GZIP =
-        gzipSync(Buffer.from(duplicateKeyConfig)).toString('base64');
+        (await gzip(Buffer.from(duplicateKeyConfig))).toString('base64');
 
       let output = '';
       await events.emit('bedrock.configure').catch(e => {
