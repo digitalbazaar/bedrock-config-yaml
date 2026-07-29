@@ -86,6 +86,32 @@ It is possible to load the config YAML from a `BEDROCK_CONFIG` environment
 variable. The value is a base64 encoded version of the entire YAML config file.
 If this variable is found, the filesystem based config setup will be skipped.
 
+### Loading From a Compressed Environment Variable
+
+The config YAML may also be loaded from a `BEDROCK_CONFIG_GZIP` environment
+variable. The value is the entire YAML config file, gzipped and then base64
+encoded. This is useful when the config is stored somewhere with a size limit,
+such as an AWS Secrets Manager secret, which caps a stored value at 64 KB;
+YAML and PEM text typically compress by roughly 4-6x.
+
+To produce a value:
+
+```
+gzip -c config.yaml | base64
+```
+
+To inspect one:
+
+```
+echo "$BEDROCK_CONFIG_GZIP" | base64 -d | gunzip
+```
+
+If both variables are set, `BEDROCK_CONFIG_GZIP` takes precedence. The value is
+decoded strictly: if `BEDROCK_CONFIG_GZIP` is set but is not valid gzip, startup
+fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than falling back to
+`BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset, `BEDROCK_CONFIG` behaves
+exactly as before.
+
 ## License
 
 [Apache License, Version 2.0](LICENSE) Copyright 2011-2024 Digital Bazaar, Inc.
