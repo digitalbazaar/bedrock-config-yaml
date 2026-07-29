@@ -92,7 +92,7 @@ The config YAML may also be loaded from a `BEDROCK_CONFIG_GZIP` environment
 variable. The value is the entire YAML config file, gzipped and then base64
 encoded. This is useful when the config is stored somewhere with a size limit,
 such as an AWS Secrets Manager secret, which caps a stored value at 64 KB;
-YAML and PEM text typically compress by roughly 4-6x.
+YAML and PEM text typically compress by roughly 3-4x.
 
 To produce a value:
 
