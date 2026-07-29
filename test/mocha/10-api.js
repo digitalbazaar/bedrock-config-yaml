@@ -19,6 +19,7 @@ import * as chai from 'chai';
 import {config, events, loggers} from '@bedrock/core';
 import {_applyConfigFromEnv} from '@bedrock/config-yaml';
 import chaiAsPromised from 'chai-as-promised';
+import {gzipSync} from 'node:zlib';
 import sinon from 'sinon';
 import winston from 'winston';
 
@@ -86,6 +87,108 @@ describe('bedrock-config-yaml', () => {
       testEnvValue: 123123123123
     });
   });
+  it('configuration can be loaded via gzip environment variable', async () => {
+    const gzipConfig = `
+    app:
+      test-bedrock-gzip-yaml:
+        testGzipValue: 123123123123
+    core:
+      test-core-gzip: 987553
+    `;
+
+    process.env.BEDROCK_CONFIG_GZIP =
+      gzipSync(Buffer.from(gzipConfig)).toString('base64');
+
+    try {
+      should.not.exist(config['test-bedrock-gzip-yaml']);
+      should.not.exist(config['test-core-gzip']);
+
+      _applyConfigFromEnv({configType: 'core'});
+
+      should.not.exist(config['test-bedrock-gzip-yaml']);
+      config['test-core-gzip'].should.eql(987553);
+
+      _applyConfigFromEnv({configType: 'app'});
+
+      config['test-core-gzip'].should.eql(987553);
+      config['test-bedrock-gzip-yaml'].should.eql({
+        testGzipValue: 123123123123
+      });
+    } finally {
+      delete process.env.BEDROCK_CONFIG_GZIP;
+    }
+  });
+  it('gzip environment variable takes precedence over BEDROCK_CONFIG',
+    async () => {
+      const gzipConfig = `
+      app:
+        test-bedrock-precedence: fromGzip
+      `;
+      const plainConfig = `
+      app:
+        test-bedrock-precedence: fromPlain
+      `;
+
+      process.env.BEDROCK_CONFIG_GZIP =
+        gzipSync(Buffer.from(gzipConfig)).toString('base64');
+      process.env.BEDROCK_CONFIG =
+        Buffer.from(plainConfig).toString('base64');
+
+      try {
+        await events.emit('bedrock.configure');
+      } finally {
+        delete process.env.BEDROCK_CONFIG_GZIP;
+        delete process.env.BEDROCK_CONFIG;
+      }
+
+      config['test-bedrock-precedence'].should.equal('fromGzip');
+    }
+  );
+  it('throws `BEDROCK_CONFIG_GZIP is invalid` error when value is not gzip',
+    async () => {
+      const plainConfig = `
+      app:
+        test-core-env: 987553
+      `;
+
+      // valid base64 of plain (non-gzipped) YAML; must not fall through
+      const loadBadConfigFn = async () => {
+        process.env.BEDROCK_CONFIG_GZIP =
+          Buffer.from(plainConfig).toString('base64');
+        return events.emit('bedrock.configure').finally(() => {
+          delete process.env.BEDROCK_CONFIG_GZIP;
+        });
+      };
+
+      await expect(loadBadConfigFn()).to.be.rejectedWith(Error,
+        'BEDROCK_CONFIG_GZIP is invalid'
+      );
+    }
+  );
+  it('does not expose data when a load from gzip env error throws',
+    async () => {
+      const duplicateKeyConfig = `
+      app:
+        sensitive: 1337
+        sensitive: hello-world
+      core:
+        test-core-env: 987553
+      `;
+
+      process.env.BEDROCK_CONFIG_GZIP =
+        gzipSync(Buffer.from(duplicateKeyConfig)).toString('base64');
+
+      let output = '';
+      await events.emit('bedrock.configure').catch(e => {
+        output = e.message;
+      }).finally(() => {
+        delete process.env.BEDROCK_CONFIG_GZIP;
+      });
+
+      expect(output).to.not.include('1337');
+      expect(output).to.not.include('hello-world');
+    }
+  );
   it('throws `BEDROCK_CONFIG is invalid` error when env config is invalid',
     async () => {
       const duplicateKeyConfig = `
