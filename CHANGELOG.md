@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## 4.5.0 - 2026-07-dd
+## 4.5.0 - 2026-07-29
 
 ### Added
 - Add support for loading the config from a `BEDROCK_CONFIG_GZIP` environment
