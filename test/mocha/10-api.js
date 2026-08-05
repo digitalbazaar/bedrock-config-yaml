@@ -278,6 +278,60 @@ describe('bedrock-config-yaml', () => {
     expect(output).to.not.include('1337');
     expect(output).to.not.include('hello-world');
   });
+  it('rejects a config containing a "__proto__" key', async () => {
+    const yaml = `
+    app:
+      __proto__:
+        polluted: yes
+    `;
+
+    process.env.BEDROCK_CONFIG = Buffer.from(yaml).toString('base64');
+    try {
+      await expect(_applyConfigFromEnv({configType: 'app'}))
+        .to.be.rejectedWith(Error, '"__proto__" is not a permitted config key');
+    } finally {
+      delete process.env.BEDROCK_CONFIG;
+    }
+
+    expect({}.polluted).to.equal(undefined);
+  });
+  it('rejects a nested "__proto__" key', async () => {
+    const yaml = `
+    app:
+      test-proto-nested:
+        __proto__:
+          nestedPollution: yes
+    `;
+
+    process.env.BEDROCK_CONFIG = Buffer.from(yaml).toString('base64');
+    try {
+      await expect(_applyConfigFromEnv({configType: 'app'}))
+        .to.be.rejectedWith(Error, '"__proto__" is not a permitted config key');
+    } finally {
+      delete process.env.BEDROCK_CONFIG;
+    }
+
+    expect({}.nestedPollution).to.equal(undefined);
+  });
+  it('rejects a config containing a "constructor" key', async () => {
+    const yaml = `
+    app:
+      constructor:
+        prototype:
+          constructorPollution: yes
+    `;
+
+    process.env.BEDROCK_CONFIG = Buffer.from(yaml).toString('base64');
+    try {
+      await expect(_applyConfigFromEnv({configType: 'app'})).to.be.rejectedWith(
+        Error, '"constructor" is not a permitted config key');
+    } finally {
+      delete process.env.BEDROCK_CONFIG;
+    }
+
+    expect({}.constructorPollution).to.equal(undefined);
+    expect(Object.assign).to.be.a('function');
+  });
   it('logs but does not fail when config does not exist', async () => {
     const origConfig = config['config-yaml'].app;
 
