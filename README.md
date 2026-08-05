@@ -114,6 +114,126 @@ gzip, startup fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than
 falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
 `BEDROCK_CONFIG` behaves exactly as before.
 
+## Config Value Transformers
+
+A YAML config may compute individual values at load time using *transformers*,
+which are addressed with YAML tags:
+
+```yaml
+database:
+  password: !secret arn:aws:secretsmanager:us-east-1:123456789012:secret:db-Ab1
+  host: !env DB_HOST
+  port: !env {name: DB_PORT, type: number, default: 5432}
+```
+
+They are resolved after the YAML is parsed and before it is merged into
+`bedrock.config`, and may be async, which is what makes remote lookups such as
+the one above possible. Aside from the built-in `env`, this module ships no
+transformers; applications provide their own. A config that uses none is parsed
+and merged exactly as before.
+
+Note that custom YAML tags, while valid YAML, are flagged as unresolved by some
+editors and linters.
+
+### Enabling Transformers
+
+A transformer must be both **registered** in application code and **allowed** by
+the `config-yaml.transformers.allow` config. Registration is usually a side
+effect of an import; the allow list is what actually turns a transformer on.
+Nothing is allowed by default:
+
+```js
+import * as bedrock from '@bedrock/core';
+// application code that registers `secret`, `ssm`, and `kms-decrypt`
+import './lib/aws-transformers.js';
+import '@bedrock/config-yaml';
+
+// only these two may be used by a YAML config; `true` allows all registered
+bedrock.config['config-yaml'].transformers.allow = ['env', 'secret'];
+```
+
+A transformer that is not registered, or not allowed, fails startup rather than
+being left in the config as an unresolved literal.
+
+A deployment config may set `config-yaml.transformers` itself, so an operator
+can enable a transformer without an application change:
+
+```yaml
+config-yaml:
+  transformers:
+    allow: ['env']
+```
+
+Settings carried by a config are applied before the directives in that same
+config are resolved, and a `core` config's settings apply to the `app` config
+that follows it.
+
+Registration is therefore the security boundary: a config can enable only
+transformers the application has already registered, and `env` is the only one
+this module registers on its own. The allow list is the operational switch over
+that set.
+
+### Built-in `env` Transformer
+
+`!env` reads an environment variable. It is registered by default but, like any
+transformer, must be added to the allow list before it can be used.
+
+```yaml
+host: !env DB_HOST                              # required; fails if unset
+port: !env {name: DB_PORT, type: number}        # string, number, boolean, json
+debug: !env {name: DEBUG, type: boolean, default: false}
+```
+
+Values are strings unless `type` is given, so `workers: !env WORKERS` yields
+`"2"`, not `2`. An unset variable with no `default` fails the config load rather
+than silently becoming `undefined`.
+
+`!env` lets whoever controls the YAML read *any* environment variable and place
+it anywhere in the config. To narrow that:
+
+```js
+config['config-yaml'].transformers.env.allow = ['DB_HOST', /^MYAPP_/];
+```
+
+### Writing a Transformer
+
+```js
+import {registerTransformer, TransformError} from '@bedrock/config-yaml';
+
+registerTransformer({
+  name: 'secret',                 // used as the YAML tag, here `!secret`
+  kinds: ['scalar', 'mapping'],   // node kinds accepted; default: ['scalar']
+  async transform({value, path, configType, signal}) {
+    return await fetchSecret(value, {signal});
+  }
+});
+```
+
+`transform` receives the parsed YAML node as `value` and may return any value,
+including an object that expands into a subtree of config. It may be sync or
+async, and must be registered before `bedrock.start()` is called.
+
+Directives may be nested, innermost first, so a transformer always receives
+fully resolved input:
+
+```yaml
+apiKey: !base64 {value: !secret arn:aws:secretsmanager:...:b64-key-Ab1}
+```
+
+Transformer errors are reported with the transformer name and config path, never
+the value; the underlying error is logged at `debug` level instead. A
+transformer may throw a `TransformError` to surface its own message, which
+must not contain config values or resolved secrets.
+
+### Other Settings
+
+```js
+// bounds the whole resolution pass, so a hung lookup fails startup
+config['config-yaml'].transformers.timeout = 30000;
+// resolve identical directives, e.g. the same secret, once per load
+config['config-yaml'].transformers.cache = true;
+```
+
 ## License
 
 [Apache License, Version 2.0](LICENSE) Copyright 2011-2024 Digital Bazaar, Inc.
