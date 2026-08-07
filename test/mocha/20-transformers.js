@@ -296,7 +296,7 @@ describe('config transformers', () => {
       });
 
       output.should.include(
-        'config transformer "!test-throws" failed at "test-error"');
+        'config transformer "!test-throws" at "test-error" failed');
       output.should.not.include('unsafe-1337');
     });
     it('exposes the message of a `TransformError`', async () => {
