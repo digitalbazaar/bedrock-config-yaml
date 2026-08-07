@@ -2,4 +2,4 @@ loggers:
   console:
     someLoggerConfig: foo
 test-transformer-core:
-  echoed: !test-echo core-value
+  echoed: {$TEST-ECHO: core-value}

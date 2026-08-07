@@ -3,18 +3,14 @@
 ## 4.6.0 - 2026-08-dd
 
 ### Added
-- Add support for config value transformers, which compute individual YAML
-  config values at load time and are addressed with YAML tags, e.g.
-  `password: !secret arn:aws:secretsmanager:...`. Transformers may be async and
-  are registered with `registerTransformer()`. See the README.
+- Add support for config value transformers, which compute individual config
+  values at load time and are addressed with a `$NAME` key, e.g.
+  `password: {$SECRET: 'arn:aws:secretsmanager:...'}`.
 - Add a built-in `env` transformer that reads environment variables, with
   optional `default` and `type` (`string`, `number`, `boolean`, `json`)
   options.
 - Add the `config-yaml.transformers` config: `allow`, `timeout`, `cache`, and
-  `env.allow`. Transformers are opt-in; `allow` defaults to `[]`, so configs
-  that use no transformers are unaffected. A deployment config may set these
-  itself, so an operator can enable a transformer without an application
-  change; only registered transformers can be enabled.
+  `env.allow`.
 
 ### Fixed
 - Reject `__proto__`, `constructor`, and `prototype` keys in a YAML config.
