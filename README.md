@@ -203,7 +203,7 @@ import {registerTransformer, TransformError} from '@bedrock/config-yaml';
 registerTransformer({
   name: 'secret',                 // used as the YAML tag, here `!secret`
   kinds: ['scalar', 'mapping'],   // node kinds accepted; default: ['scalar']
-  async transform({value, path, configType, signal}) {
+  async transform({value, path, settings, configType, signal}) {
     return await fetchSecret(value, {signal});
   }
 });
@@ -211,7 +211,9 @@ registerTransformer({
 
 `transform` receives the parsed YAML node as `value` and may return any value,
 including an object that expands into a subtree of config. It may be sync or
-async, and must be registered before `bedrock.start()` is called.
+async, and must be registered before `bedrock.start()` is called. `settings` is
+this transformer's own config, read from `config-yaml.transformers.<name>` —
+the same place the built-in `env` reads `env.allow` from.
 
 Directives may be nested, innermost first, so a transformer always receives
 fully resolved input:
@@ -222,8 +224,13 @@ apiKey: !base64 {value: !secret arn:aws:secretsmanager:...:b64-key-Ab1}
 
 Transformer errors are reported with the transformer name and config path, never
 the value; the underlying error is logged at `debug` level instead. A
-transformer may throw a `TransformError` to surface its own message, which
-must not contain config values or resolved secrets.
+transformer may throw a `TransformError` to add the reason it failed, which must
+not contain config values or resolved secrets:
+
+```
+Failed to load config: config transformer "!env" at "database.host" requires
+the "DB_HOST" environment variable, which is not set
+```
 
 ### Other Settings
 
