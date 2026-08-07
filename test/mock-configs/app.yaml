@@ -2,7 +2,7 @@ test-bedrock-module:
   foo: fromYaml
   overwriteMe: fromYaml
 test-transformer-app:
-  echoed: !test-echo hello
-  fromEnv: !env TEST_CONFIG_YAML_APP
-  port: !env {name: TEST_CONFIG_YAML_PORT, type: number}
-  defaulted: !env {name: TEST_CONFIG_YAML_UNSET, default: fallback}
+  echoed: {$TEST-ECHO: hello}
+  fromEnv: {$ENV: TEST_CONFIG_YAML_APP}
+  port: {$ENV: {name: TEST_CONFIG_YAML_PORT, type: number}}
+  defaulted: {$ENV: {name: TEST_CONFIG_YAML_UNSET, default: fallback}}

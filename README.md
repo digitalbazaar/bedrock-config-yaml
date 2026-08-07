@@ -116,24 +116,38 @@ falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
 
 ## Config Value Transformers
 
-A YAML config may compute individual values at load time using *transformers*,
-which are addressed with YAML tags:
+A config may compute individual values at load time using *transformers*,
+addressed with a `$NAME` key:
 
 ```yaml
 database:
-  password: !secret arn:aws:secretsmanager:us-east-1:123456789012:secret:db-Ab1
-  host: !env DB_HOST
-  port: !env {name: DB_PORT, type: number, default: 5432}
+  password: {$SECRET: 'arn:aws:secretsmanager:us-east-1:123456789012:secret:db-Ab1'}
+  host: {$ENV: DB_HOST}
+  port: {$ENV: {name: DB_PORT, type: number, default: 5432}}
 ```
 
-They are resolved after the YAML is parsed and before it is merged into
+The same syntax works in JSON, since YAML is a superset of it:
+
+```json
+{
+  "database": {
+    "host": {"$ENV": "DB_HOST"},
+    "port": {"$ENV": {"name": "DB_PORT", "type": "number", "default": 5432}}
+  }
+}
+```
+
+A directive is an object whose **only** key is `$` followed by the uppercased
+name of a transformer. Only uppercase names are reserved, so `{$ref: ...}`,
+`{$schema: ...}`, and MongoDB-style `{$gt: 5}` remain ordinary config values. A
+directive key sharing its object with other keys is a mistake and fails the
+load rather than being silently treated as a value.
+
+Directives are resolved after the config is parsed and before it is merged into
 `bedrock.config`, and may be async, which is what makes remote lookups such as
 the one above possible. Aside from the built-in `env`, this module ships no
 transformers; applications provide their own. A config that uses none is parsed
 and merged exactly as before.
-
-Note that custom YAML tags, while valid YAML, are flagged as unresolved by some
-editors and linters.
 
 ### Enabling Transformers
 
@@ -148,12 +162,12 @@ import * as bedrock from '@bedrock/core';
 import './lib/aws-transformers.js';
 import '@bedrock/config-yaml';
 
-// only these two may be used by a YAML config; `true` allows all registered
+// only these two may be used by a config; `true` allows all registered
 bedrock.config['config-yaml'].transformers.allow = ['env', 'secret'];
 ```
 
 A transformer that is not registered, or not allowed, fails startup rather than
-being left in the config as an unresolved literal.
+being left in the config as an unresolved object.
 
 A deployment config may set `config-yaml.transformers` itself, so an operator
 can enable a transformer without an application change:
@@ -175,21 +189,21 @@ that set.
 
 ### Built-in `env` Transformer
 
-`!env` reads an environment variable. It is registered by default but, like any
+`$ENV` reads an environment variable. It is registered by default but, like any
 transformer, must be added to the allow list before it can be used.
 
 ```yaml
-host: !env DB_HOST                              # required; fails if unset
-port: !env {name: DB_PORT, type: number}        # string, number, boolean, json
-debug: !env {name: DEBUG, type: boolean, default: false}
+host: {$ENV: DB_HOST}                        # required; fails if unset
+port: {$ENV: {name: DB_PORT, type: number}}  # string, number, boolean, json
+debug: {$ENV: {name: DEBUG, type: boolean, default: false}}
 ```
 
-Values are strings unless `type` is given, so `workers: !env WORKERS` yields
-`"2"`, not `2`. An unset variable with no `default` fails the config load rather
-than silently becoming `undefined`.
+Values are strings unless `type` is given, so `{$ENV: WORKERS}` yields `"2"`,
+not `2`. An unset variable with no `default` fails the config load rather than
+silently becoming `undefined`.
 
-`!env` lets whoever controls the YAML read *any* environment variable and place
-it anywhere in the config. To narrow that:
+`$ENV` lets whoever controls the config read *any* environment variable and
+place it anywhere in the config. To narrow that:
 
 ```js
 config['config-yaml'].transformers.env.allow = ['DB_HOST', /^MYAPP_/];
@@ -201,25 +215,25 @@ config['config-yaml'].transformers.env.allow = ['DB_HOST', /^MYAPP_/];
 import {registerTransformer, TransformError} from '@bedrock/config-yaml';
 
 registerTransformer({
-  name: 'secret',                 // used as the YAML tag, here `!secret`
-  kinds: ['scalar', 'mapping'],   // node kinds accepted; default: ['scalar']
+  name: 'secret',                 // used as `{$SECRET: ...}`
+  kinds: ['scalar', 'mapping'],   // value shapes accepted; default: ['scalar']
   async transform({value, path, settings, configType, signal}) {
     return await fetchSecret(value, {signal});
   }
 });
 ```
 
-`transform` receives the parsed YAML node as `value` and may return any value,
+`transform` receives the directive's value as `value` and may return any value,
 including an object that expands into a subtree of config. It may be sync or
 async, and must be registered before `bedrock.start()` is called. `settings` is
-this transformer's own config, read from `config-yaml.transformers.<name>` —
+this transformer's own config, read from `config-yaml.transformers.<name>` --
 the same place the built-in `env` reads `env.allow` from.
 
 Directives may be nested, innermost first, so a transformer always receives
 fully resolved input:
 
 ```yaml
-apiKey: !base64 {value: !secret arn:aws:secretsmanager:...:b64-key-Ab1}
+apiKey: {$BASE64: {value: {$SECRET: 'arn:aws:secretsmanager:...:b64-key-Ab1'}}}
 ```
 
 Transformer errors are reported with the transformer name and config path, never
@@ -228,7 +242,7 @@ transformer may throw a `TransformError` to add the reason it failed, which must
 not contain config values or resolved secrets:
 
 ```
-Failed to load config: config transformer "!env" at "database.host" requires
+Failed to load config: config transformer "$ENV" at "database.host" requires
 the "DB_HOST" environment variable, which is not set
 ```
 

@@ -50,11 +50,11 @@ describe('config transformers', () => {
     it('rejects a transformer that is not registered', async () => {
       const yaml = `
       app:
-        test-unknown-transformer: !test-nope value
+        test-unknown-transformer: {$TEST-NOPE: value}
       `;
 
       await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
-        'unknown config transformer "!test-nope" at ' +
+        'unknown config transformer "$TEST-NOPE" at ' +
         '"test-unknown-transformer"');
       should.not.exist(config['test-unknown-transformer']);
     });
@@ -62,18 +62,18 @@ describe('config transformers', () => {
       const yaml = `
       app:
         test-disallowed-transformer:
-          nested: !test-not-allowed value
+          nested: {$TEST-NOT-ALLOWED: value}
       `;
 
       await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
-        'config transformer "!test-not-allowed" at ' +
+        'config transformer "$TEST-NOT-ALLOWED" at ' +
         '"test-disallowed-transformer.nested" is not allowed');
       should.not.exist(config['test-disallowed-transformer']);
     });
     it('allows every registered transformer when set to `true`', async () => {
       const yaml = `
       app:
-        test-allow-true: !test-not-allowed value
+        test-allow-true: {$TEST-NOT-ALLOWED: value}
       `;
 
       const original = transformerCfg.allow;
@@ -104,7 +104,7 @@ describe('config transformers', () => {
         config-yaml:
           transformers:
             allow: ['test-not-allowed']
-        test-enable-same-config: !test-not-allowed value
+        test-enable-same-config: {$TEST-NOT-ALLOWED: value}
       `;
 
       await applyEnvConfig({yaml});
@@ -122,7 +122,7 @@ describe('config transformers', () => {
             transformers:
               allow: ['test-not-allowed']
         app:
-          test-enable-cross-pass: !test-not-allowed value
+          test-enable-cross-pass: {$TEST-NOT-ALLOWED: value}
         `;
 
         await applyEnvConfig({yaml, configType: 'core'});
@@ -137,11 +137,11 @@ describe('config transformers', () => {
         config-yaml:
           transformers:
             allow: ['test-never-registered']
-        test-enable-unregistered: !test-never-registered value
+        test-enable-unregistered: {$TEST-NEVER-REGISTERED: value}
       `;
 
       await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
-        'unknown config transformer "!test-never-registered" at ' +
+        'unknown config transformer "$TEST-NEVER-REGISTERED" at ' +
         '"test-enable-unregistered"');
       should.not.exist(config['test-enable-unregistered']);
     });
@@ -150,11 +150,65 @@ describe('config transformers', () => {
       app:
         config-yaml:
           transformers:
-            allow: !test-echo something
+            allow: {$TEST-ECHO: something}
       `;
 
       await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
         '"config-yaml.transformers" may not contain config transformers');
+    });
+  });
+
+  describe('directive syntax', () => {
+    it('rejects a directive key alongside other keys', async () => {
+      const yaml = `
+      app:
+        test-multi-key:
+          $TEST-ECHO: value
+          other: 1
+      `;
+
+      await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
+        'config transformer "$TEST-ECHO" at "test-multi-key" must be the ' +
+        'only key in its object');
+      should.not.exist(config['test-multi-key']);
+    });
+    it('treats lowercase "$" keys as ordinary values', async () => {
+      // `$ref`, `$schema`, and MongoDB operators are all lowercase, so they
+      // must survive untouched; only uppercase names are reserved
+      const yaml = `
+      app:
+        test-lowercase-sigil:
+          schema: {$ref: '#/defs/x'}
+          query: {$gt: 5}
+          mixedCase: {$Env: TEST_CONFIG_YAML_APP}
+      `;
+
+      await applyEnvConfig({yaml});
+
+      config['test-lowercase-sigil'].should.eql({
+        schema: {$ref: '#/defs/x'},
+        query: {$gt: 5},
+        mixedCase: {$Env: 'TEST_CONFIG_YAML_APP'}
+      });
+      testState.calls.should.have.length(0);
+    });
+    it('resolves a directive written as JSON', async () => {
+      // YAML is a superset of JSON, so one syntax serves both formats
+      const json = JSON.stringify({
+        app: {
+          'test-json-config': {
+            host: {$ENV: 'TEST_CONFIG_YAML_APP'},
+            port: {$ENV: {name: 'TEST_CONFIG_YAML_PORT', type: 'number'}}
+          }
+        }
+      });
+
+      await applyEnvConfig({yaml: json});
+
+      config['test-json-config'].should.eql({
+        host: 'fromEnvVar',
+        port: 18443
+      });
     });
   });
 
@@ -163,9 +217,9 @@ describe('config transformers', () => {
       const yaml = `
       app:
         test-kinds:
-          scalar: !test-echo one
-          sequence: !test-echo [a, b]
-          mapping: !test-echo {a: 1}
+          scalar: {$TEST-ECHO: one}
+          sequence: {$TEST-ECHO: [a, b]}
+          mapping: {$TEST-ECHO: {a: 1}}
       `;
 
       await applyEnvConfig({yaml});
@@ -188,18 +242,18 @@ describe('config transformers', () => {
       async () => {
         const yaml = `
         app:
-          test-wrong-kind: !test-throws {a: 1}
+          test-wrong-kind: {$TEST-THROWS: {a: 1}}
         `;
 
         // `test-throws` is scalar-only; the kind is checked before it is called
         await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
-          'config transformer "!test-throws" at "test-wrong-kind" does not ' +
+          'config transformer "$TEST-THROWS" at "test-wrong-kind" does not ' +
           'accept a mapping value');
       });
     it('resolves nested directives innermost first', async () => {
       const yaml = `
       app:
-        test-nested: !test-echo {value: !test-echo inner}
+        test-nested: {$TEST-ECHO: {value: {$TEST-ECHO: inner}}}
       `;
 
       await applyEnvConfig({yaml});
@@ -210,9 +264,9 @@ describe('config transformers', () => {
       const yaml = `
       app:
         test-dedupe:
-          first: !test-echo same
-          second: !test-echo same
-          other: !test-echo different
+          first: {$TEST-ECHO: same}
+          second: {$TEST-ECHO: same}
+          other: {$TEST-ECHO: different}
       `;
 
       await applyEnvConfig({yaml});
@@ -228,7 +282,7 @@ describe('config transformers', () => {
       const yaml = `
       app:
         test-alias:
-          anchored: &shared !test-echo aliased
+          anchored: &shared {$TEST-ECHO: aliased}
           alias: *shared
       `;
 
@@ -251,8 +305,8 @@ describe('config transformers', () => {
       const yaml = `
       app:
         test-no-cache:
-          first: !test-echo same
-          second: !test-echo same
+          first: {$TEST-ECHO: same}
+          second: {$TEST-ECHO: same}
       `;
 
       const original = transformerCfg.cache;
@@ -287,7 +341,7 @@ describe('config transformers', () => {
     it('does not expose the message of a transformer error', async () => {
       const yaml = `
       app:
-        test-error: !test-throws value
+        test-error: {$TEST-THROWS: value}
       `;
 
       let output = '';
@@ -296,13 +350,13 @@ describe('config transformers', () => {
       });
 
       output.should.include(
-        'config transformer "!test-throws" at "test-error" failed');
+        'config transformer "$TEST-THROWS" at "test-error" failed');
       output.should.not.include('unsafe-1337');
     });
     it('exposes the message of a `TransformError`', async () => {
       const yaml = `
       app:
-        test-safe-error: !test-throws-safe value
+        test-safe-error: {$TEST-THROWS-SAFE: value}
       `;
 
       await expect(applyEnvConfig({yaml})).to.be.rejectedWith(
@@ -312,7 +366,7 @@ describe('config transformers', () => {
       const yaml = `
       app:
         test-error-values:
-          sensitive: !test-throws hello-world
+          sensitive: {$TEST-THROWS: hello-world}
       `;
 
       let output = '';
@@ -326,7 +380,7 @@ describe('config transformers', () => {
     it('fails when transformers exceed the timeout', async () => {
       const yaml = `
       app:
-        test-timeout: !test-hangs value
+        test-timeout: {$TEST-HANGS: value}
       `;
 
       const original = transformerCfg.timeout;
@@ -389,10 +443,10 @@ describe('env transformer', () => {
     const yaml = `
     app:
       test-env-types:
-        number: !env {name: TEST_ENV_NUMBER, type: number}
-        boolean: !env {name: TEST_ENV_BOOLEAN, type: boolean}
-        json: !env {name: TEST_ENV_JSON, type: json}
-        string: !env TEST_ENV_NUMBER
+        number: {$ENV: {name: TEST_ENV_NUMBER, type: number}}
+        boolean: {$ENV: {name: TEST_ENV_BOOLEAN, type: boolean}}
+        json: {$ENV: {name: TEST_ENV_JSON, type: json}}
+        string: {$ENV: TEST_ENV_NUMBER}
     `;
 
     try {
@@ -413,7 +467,7 @@ describe('env transformer', () => {
   it('fails when a required variable is not set', async () => {
     const yaml = `
     app:
-      test-env-missing: !env TEST_ENV_DOES_NOT_EXIST
+      test-env-missing: {$ENV: TEST_ENV_DOES_NOT_EXIST}
     `;
 
     await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
@@ -425,7 +479,7 @@ describe('env transformer', () => {
 
     const yaml = `
     app:
-      test-env-bad-number: !env {name: TEST_ENV_NOT_A_NUMBER, type: number}
+      test-env-bad-number: {$ENV: {name: TEST_ENV_NOT_A_NUMBER, type: number}}
     `;
 
     try {
@@ -441,7 +495,7 @@ describe('env transformer', () => {
 
     const yaml = `
     app:
-      test-env-bad-json: !env {name: TEST_ENV_BAD_JSON, type: json}
+      test-env-bad-json: {$ENV: {name: TEST_ENV_BAD_JSON, type: json}}
     `;
 
     let output = '';
@@ -459,7 +513,7 @@ describe('env transformer', () => {
   it('fails on an unknown type', async () => {
     const yaml = `
     app:
-      test-env-bad-type: !env {name: TEST_CONFIG_YAML_APP, type: nope}
+      test-env-bad-type: {$ENV: {name: TEST_CONFIG_YAML_APP, type: nope}}
     `;
 
     await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
@@ -468,7 +522,7 @@ describe('env transformer', () => {
   it('fails when no variable name is given', async () => {
     const yaml = `
     app:
-      test-env-no-name: !env {type: number}
+      test-env-no-name: {$ENV: {type: number}}
     `;
 
     await expect(applyEnvConfig({yaml})).to.be.rejectedWith(Error,
@@ -478,11 +532,11 @@ describe('env transformer', () => {
     const yaml = `
     app:
       test-env-restricted:
-        allowed: !env TEST_CONFIG_YAML_APP
+        allowed: {$ENV: TEST_CONFIG_YAML_APP}
     `;
     const deniedYaml = `
     app:
-      test-env-denied: !env TEST_CONFIG_YAML_PORT
+      test-env-denied: {$ENV: TEST_CONFIG_YAML_PORT}
     `;
 
     const original = transformerCfg.env.allow;
