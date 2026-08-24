@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## 4.6.0 - 2026-08-dd
+## 4.6.0 - 2026-08-24
 
 ### Added
 - Add support for config value transformers, which compute individual config
