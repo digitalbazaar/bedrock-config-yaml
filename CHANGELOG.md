@@ -1,5 +1,15 @@
 # bedrock-config-yaml ChangeLog
 
+## Unreleased
+
+### Added
+- Add the optional `config-yaml.sources.aws` source for Nitro Enclaves.
+- Load the version-1 encrypted YAML envelope from Secrets Manager using the
+  `BedrockConfigSecretName` EC2 tag and `@bedrock/aws-kms`.
+
+### Changed
+- Preserve an existing `config-yaml` namespace when installing defaults.
+
 ## 4.6.0 - 2026-08-24
 
 ### Added

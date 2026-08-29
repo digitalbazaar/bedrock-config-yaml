@@ -10,6 +10,7 @@
     "coverage-report": "c8 report"
   },
   "dependencies": {
+    "@bedrock/aws-kms": "github:digitalbazaar/bedrock-aws-kms#nitro-support",
     "@bedrock/config-yaml": "file:..",
     "@bedrock/core": "^6.3.0",
     "@bedrock/test": "^9.0.0",

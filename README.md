@@ -114,6 +114,41 @@ gzip, startup fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than
 falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
 `BEDROCK_CONFIG` behaves exactly as before.
 
+## Loading From AWS
+
+An optional AWS source may provide the combined YAML configuration. Enabling
+the source makes AWS eligible for discovery; if IMDS or the configured instance
+tag is unavailable, config loading continues through the existing filesystem
+path.
+
+```js
+import '@bedrock/config-yaml';
+import {config} from '@bedrock/core';
+
+config['config-yaml'].sources.aws.enabled = true;
+config['config-yaml'].sources.aws.environment = 'nitro';
+```
+
+The AWS source reads the non-secret EC2 instance tag named
+`BedrockConfigSecretName` by default. The tag value identifies the Secrets
+Manager secret containing the encrypted configuration envelope. The tag name
+may be overridden with `sources.aws.configLocationTag`.
+
+Only `environment: 'nitro'` is implemented. The environment is evaluated only
+after the AWS source has been discovered. Once the source is discovered, an
+unsupported environment or any later Secrets Manager, KMS, envelope, decrypt,
+or YAML error fails startup rather than falling back to filesystem config.
+
+The source expects envelope version 1, the original released envelope format.
+It fetches the envelope from Secrets Manager in the default application Region,
+uses the `config-yaml` named `@bedrock/aws-kms` client to attested-decrypt the
+encrypted data key, decrypts the YAML payload with AES-256-GCM, verifies its
+SHA-256 hash, and then passes the resulting YAML through the existing combined
+configuration parsing and merge path.
+
+All direct IMDS HTTP requests made by this package use
+`@digitalbazaar/http-client`.
+
 ## Config Value Transformers
 
 A config may compute individual values at load time using *transformers*,
