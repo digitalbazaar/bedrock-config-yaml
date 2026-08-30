@@ -117,9 +117,9 @@ falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
 ## Loading From AWS
 
 An optional AWS source may provide the combined YAML configuration. Enabling
-the source makes AWS eligible for discovery; if IMDS or the configured instance
-tag is unavailable, config loading continues through the existing filesystem
-path.
+the source selects it for the process; failure to read IMDS or the configured
+instance tag fails startup. Filesystem configuration remains the default when
+the AWS source is disabled.
 
 ```js
 import '@bedrock/config-yaml';
@@ -134,10 +134,11 @@ The AWS source reads the non-secret EC2 instance tag named
 Manager secret containing the encrypted configuration envelope. The tag name
 may be overridden with `sources.aws.configLocationTag`.
 
-Only `environment: 'nitro'` is implemented. The environment is evaluated only
-after the AWS source has been discovered. Once the source is discovered, an
-unsupported environment or any later Secrets Manager, KMS, envelope, decrypt,
-or YAML error fails startup rather than falling back to filesystem config.
+Only `environment: 'nitro'` is implemented. An unsupported environment or any
+IMDS, Secrets Manager, KMS, envelope, decrypt, or YAML error fails startup
+rather than changing configuration sources.
+The loaded config may not define `config-yaml.sources`; source selection belongs
+to the bootstrap configuration and cannot be changed by the source itself.
 
 The source expects envelope version 1, the original released envelope format.
 It fetches the envelope from Secrets Manager in the default application Region,

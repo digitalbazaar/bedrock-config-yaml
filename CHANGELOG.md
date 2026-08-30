@@ -8,7 +8,10 @@
   `BedrockConfigSecretName` EC2 tag and `@bedrock/aws-kms`.
 
 ### Changed
-- Preserve an existing `config-yaml` namespace when installing defaults.
+- Classify startup retries by standard error name and dependency stage instead
+  of package-specific error codes.
+- Treat an enabled AWS source as authoritative instead of falling back to file
+  configuration when IMDS discovery fails.
 
 ## 4.6.0 - 2026-08-24
 
