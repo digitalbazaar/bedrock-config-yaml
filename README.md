@@ -130,9 +130,9 @@ config['config-yaml'].sources.aws.environment = 'nitro';
 ```
 
 The AWS source reads the non-secret EC2 instance tag named
-`BedrockConfigSecretName` by default. The tag value identifies the Secrets
-Manager secret containing the encrypted configuration envelope. The tag name
-may be overridden with `sources.aws.configLocationTag`.
+`BedrockConfigSecretId` by default. The tag value is passed to Secrets Manager
+as `SecretId` and may therefore be a secret name or ARN. The tag name may be
+overridden with `sources.aws.secretIdTag`.
 
 Only `environment: 'nitro'` is implemented. An unsupported environment or any
 IMDS, Secrets Manager, KMS, envelope, decrypt, or YAML error fails startup

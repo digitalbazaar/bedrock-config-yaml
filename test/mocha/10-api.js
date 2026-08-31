@@ -354,7 +354,7 @@ describe('bedrock-config-yaml', () => {
     expect(aws).to.deep.equal({
       enabled: false,
       environment: null,
-      configLocationTag: 'BedrockConfigSecretName'
+      secretIdTag: 'BedrockConfigSecretId'
     });
   });
 });

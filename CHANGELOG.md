@@ -5,7 +5,7 @@
 ### Added
 - Add the optional `config-yaml.sources.aws` source for Nitro Enclaves.
 - Load the version-1 encrypted YAML envelope from Secrets Manager using the
-  `BedrockConfigSecretName` EC2 tag and `@bedrock/aws-kms`.
+  `BedrockConfigSecretId` EC2 tag and `@bedrock/aws-kms`.
 
 ### Changed
 - Classify startup retries by standard error name and dependency stage instead
