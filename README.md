@@ -116,10 +116,14 @@ falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
 
 ## Loading From AWS
 
-An optional AWS source may provide the combined YAML configuration. Enabling
-the source selects it for the process; failure to read IMDS or the configured
-instance tag fails startup. Filesystem configuration remains the default when
-the AWS source is disabled.
+An optional AWS source may provide the combined YAML configuration. The
+`BEDROCK_CONFIG_GZIP` and `BEDROCK_CONFIG` environment variables take
+precedence over an enabled AWS source: when either is set, the AWS source is
+not consulted. This is intentional — inside an enclave, environment values
+are baked into the measured image. Otherwise, enabling the source selects it
+for the process; failure to read IMDS or the configured instance tag fails
+startup. Filesystem configuration remains the default when the AWS source is
+disabled.
 
 ```js
 import '@bedrock/config-yaml';
@@ -143,7 +147,8 @@ to the bootstrap configuration and cannot be changed by the source itself.
 The source expects envelope version 1, the original released envelope format.
 It fetches the envelope from Secrets Manager in the default application Region,
 uses the `config-yaml` named `@bedrock/aws-kms` client to attested-decrypt the
-encrypted data key, decrypts the YAML payload with AES-256-GCM, verifies its
+encrypted data key (enforcing the envelope's `kmsKeyId` through the KMS
+`KeyId` parameter), decrypts the YAML payload with AES-256-GCM, verifies its
 SHA-256 hash, and then passes the resulting YAML through the existing combined
 configuration parsing and merge path.
 
