@@ -8,6 +8,7 @@
   `BedrockConfigSecretId` EC2 tag and `@bedrock/aws-kms`.
 
 ### Changed
+- Use `Uint8Array` for byte-oriented APIs.
 - Classify startup retries by standard error name and dependency stage instead
   of package-specific error codes.
 - Treat an enabled AWS source as authoritative instead of falling back to file

@@ -15,19 +15,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-import {createCipheriv, createHash} from 'node:crypto';
 import {
   decryptEnvelope, parseEnvelope
 } from '@bedrock/config-yaml/lib/envelope.js';
+import {Buffer} from 'node:buffer';
+import {createCipheriv, createHash} from 'node:crypto';
 
-const plaintext = Buffer.from('core:\n  workers: 1\n');
-const key = Buffer.alloc(32, 1);
+const plaintext = new TextEncoder().encode('core:\n  workers: 1\n');
+const key = new Uint8Array(32).fill(1);
 
 describe('AWS config envelope', () => {
   it('parses and decrypts a version-1 envelope', () => {
     const envelope = parseEnvelope(_createEnvelope());
 
-    envelope.encryptedDataKey.should.be.instanceOf(Buffer);
+    envelope.encryptedDataKey.should.be.instanceOf(Uint8Array);
     decryptEnvelope({envelope, key}).should.deep.equal(plaintext);
   });
 
@@ -67,7 +68,7 @@ describe('AWS config envelope', () => {
   it('rejects an invalid data key', () => {
     const envelope = parseEnvelope(_createEnvelope());
     const error = _getError(() => decryptEnvelope({
-      envelope, key: Buffer.alloc(31)
+      envelope, key: new Uint8Array(31)
     }));
 
     error.name.should.equal('DataError');
@@ -95,7 +96,7 @@ describe('AWS config envelope', () => {
 });
 
 function _createEnvelope() {
-  const iv = Buffer.alloc(12, 2);
+  const iv = new Uint8Array(12).fill(2);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const ciphertext = Buffer.concat([
     cipher.update(plaintext),
@@ -106,7 +107,7 @@ function _createEnvelope() {
     format: 'yaml',
     kmsKeyId: 'arn:aws:kms:us-east-1:123456789012:key/test',
     encryptedDataKey: Buffer.from('encrypted key').toString('base64'),
-    iv: iv.toString('base64'),
+    iv: Buffer.from(iv).toString('base64'),
     authTag: cipher.getAuthTag().toString('base64'),
     ciphertext: ciphertext.toString('base64'),
     plaintextSha256: createHash('sha256').update(plaintext).digest('hex')
