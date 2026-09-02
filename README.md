@@ -141,8 +141,24 @@ overridden with `sources.aws.secretIdTag`.
 Only `environment: 'nitro'` is implemented. An unsupported environment or any
 IMDS, Secrets Manager, KMS, envelope, decrypt, or YAML error fails startup
 rather than changing configuration sources.
+
+Applications that enable the AWS source must install `@bedrock/aws-kms` and
+`@aws-sdk/client-secrets-manager`. They are optional peer dependencies and are
+loaded only when the source is enabled; filesystem and environment-only
+applications do not need them or the native kmstool runtime.
+
 The loaded config may not define `config-yaml.sources`; source selection belongs
 to the bootstrap configuration and cannot be changed by the source itself.
+
+Startup has one five-minute retry budget. Region/tag discovery retries network,
+not-found, timeout, and credential-provider readiness failures. Secrets Manager
+retries those transient classes plus access-denied while fresh IAM policy state
+converges; KMS retries network, timeout, credential-provider, and access-denied
+failures. Exhausted SDK retry metadata and AWS 5xx responses are retried only at
+the Secrets Manager/KMS client stages. Invalid source settings, malformed
+envelopes, authentication failures, decrypt errors, and invalid YAML fail fast.
+Retry logs include the dependency stage, safe error name, attempt, and next wait;
+the terminal timeout retains that stage and error name.
 
 The source expects envelope version 1, the original released envelope format.
 It fetches the envelope from Secrets Manager in the default application Region,
@@ -152,7 +168,7 @@ encrypted data key (enforcing the envelope's `kmsKeyId` through the KMS
 SHA-256 hash, and then passes the resulting YAML through the existing combined
 configuration parsing and merge path.
 
-All direct IMDS HTTP requests made by this package use
+Direct IMDS HTTP requests are delegated to `@bedrock/aws-kms`, which uses
 `@digitalbazaar/http-client`.
 
 ## Config Value Transformers

@@ -31,13 +31,20 @@
   },
   "homepage": "https://github.com/digitalbazaar/bedrock-config-yaml",
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.1080.0",
-    "@digitalbazaar/http-client": "^4.4.0",
     "js-yaml": "^4.2.0"
   },
   "peerDependencies": {
-    "@bedrock/core": "^6.3.0",
-    "@bedrock/aws-kms": "github:digitalbazaar/bedrock-aws-kms#nitro-support"
+    "@aws-sdk/client-secrets-manager": "^3.1080.0",
+    "@bedrock/aws-kms": "github:digitalbazaar/bedrock-aws-kms#nitro-support",
+    "@bedrock/core": "^6.3.0"
+  },
+  "peerDependenciesMeta": {
+    "@aws-sdk/client-secrets-manager": {
+      "optional": true
+    },
+    "@bedrock/aws-kms": {
+      "optional": true
+    }
   },
   "directories": {
     "lib": "./lib"

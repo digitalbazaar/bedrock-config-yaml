@@ -11,6 +11,8 @@
 - Use `Uint8Array` for byte-oriented APIs.
 - Classify startup retries by standard error name and dependency stage instead
   of package-specific error codes.
+- Retry Region discovery, credential-provider, and transient Secret/KMS startup
+  failures within the existing bounded deadline.
 - Treat an enabled AWS source as authoritative instead of falling back to file
   configuration when IMDS discovery fails.
 

@@ -10,6 +10,7 @@
     "coverage-report": "c8 report"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "3.1124.0",
     "@bedrock/aws-kms": "github:digitalbazaar/bedrock-aws-kms#nitro-support",
     "@bedrock/config-yaml": "file:..",
     "@bedrock/core": "^6.3.0",
