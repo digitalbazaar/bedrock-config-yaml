@@ -8,6 +8,11 @@
   `BedrockConfigSecretId` EC2 tag and `@bedrock/aws-kms`.
 
 ### Changed
+- Allow the measured deployment wrapper to select Nitro config loading with
+  `BEDROCK_CONFIG_AWS_ENVIRONMENT=nitro` while applications remain disabled by
+  default.
+- Make the AWS startup retry budget configurable as `sources.aws.maxWaitMs`,
+  defaulting to 300000 milliseconds.
 - Use `Uint8Array` for byte-oriented APIs.
 - Classify startup retries by standard error name and dependency stage instead
   of package-specific error codes.

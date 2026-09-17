@@ -354,6 +354,7 @@ describe('bedrock-config-yaml', () => {
     expect(aws).to.deep.equal({
       enabled: false,
       environment: null,
+      maxWaitMs: 300000,
       secretIdTag: 'BedrockConfigSecretId'
     });
   });

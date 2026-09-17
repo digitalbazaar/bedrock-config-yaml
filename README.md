@@ -125,18 +125,38 @@ for the process; failure to read IMDS or the configured instance tag fails
 startup. Filesystem configuration remains the default when the AWS source is
 disabled.
 
+Top-level applications should remain portable and disabled by default:
+
 ```js
 import '@bedrock/config-yaml';
 import {config} from '@bedrock/core';
 
-config['config-yaml'].sources.aws.enabled = true;
-config['config-yaml'].sources.aws.environment = 'nitro';
+config['config-yaml'].sources.aws.enabled = false;
+config['config-yaml'].sources.aws.environment = null;
 ```
+
+A Nitro deployment wrapper selects the source before Bedrock starts:
+
+```dockerfile
+ENV BEDROCK_CONFIG_AWS_ENVIRONMENT=nitro
+```
+
+`BEDROCK_CONFIG_AWS_ENVIRONMENT` is bootstrap configuration. When it is set,
+it overrides the effective `sources.aws.enabled` and `sources.aws.environment`
+for source selection without mutating the application's configured defaults.
+This lets an application run locally without probing AWS while making AWS
+configuration mandatory in the measured Nitro image. Applications may still
+select the source directly by setting `enabled = true` and
+`environment = 'nitro'` before the configuration events run.
 
 The AWS source reads the non-secret EC2 instance tag named
 `BedrockConfigSecretId` by default. The tag value is passed to Secrets Manager
 as `SecretId` and may therefore be a secret name or ARN. The tag name may be
 overridden with `sources.aws.secretIdTag`.
+
+The bounded startup wait is configured with `sources.aws.maxWaitMs` and defaults
+to `300000` milliseconds. A value of `0` performs the initial attempt but does
+not wait before returning a timeout for a retryable dependency failure.
 
 Only `environment: 'nitro'` is implemented. An unsupported environment or any
 IMDS, Secrets Manager, KMS, envelope, decrypt, or YAML error fails startup
@@ -150,7 +170,8 @@ applications do not need them or the native kmstool runtime.
 The loaded config may not define `config-yaml.sources`; source selection belongs
 to the bootstrap configuration and cannot be changed by the source itself.
 
-Startup has one five-minute retry budget. Region/tag discovery retries network,
+Startup has one bounded retry budget controlled by `sources.aws.maxWaitMs`.
+Region/tag discovery retries network,
 not-found, timeout, and credential-provider readiness failures. Secrets Manager
 retries those transient classes plus access-denied while fresh IAM policy state
 converges; KMS retries network, timeout, credential-provider, and access-denied

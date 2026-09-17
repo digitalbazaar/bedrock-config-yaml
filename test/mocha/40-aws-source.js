@@ -23,14 +23,23 @@ import {_createSharedLoader} from '@bedrock/config-yaml';
 
 describe('AWS config source', () => {
   const source = config['config-yaml'].sources.aws;
+  const environmentVariable = 'BEDROCK_CONFIG_AWS_ENVIRONMENT';
   let original;
+  let originalEnvironment;
 
   beforeEach(() => {
     original = {...source};
+    originalEnvironment = process.env[environmentVariable];
+    delete process.env[environmentVariable];
   });
 
   afterEach(() => {
     Object.assign(source, original);
+    if(originalEnvironment === undefined) {
+      delete process.env[environmentVariable];
+    } else {
+      process.env[environmentVariable] = originalEnvironment;
+    }
   });
 
   it('is disabled by default', () => {
@@ -42,6 +51,33 @@ describe('AWS config source', () => {
     source.environment = 'nitro';
 
     getAwsSource().should.equal(source);
+  });
+
+  it('lets the deployment environment select Nitro bootstrap', () => {
+    process.env[environmentVariable] = 'nitro';
+
+    const effectiveSource = getAwsSource();
+    effectiveSource.should.not.equal(source);
+    effectiveSource.enabled.should.equal(true);
+    effectiveSource.environment.should.equal('nitro');
+    source.enabled.should.equal(false);
+    should.equal(source.environment, null);
+  });
+
+  it('rejects an unsupported deployment environment', () => {
+    process.env[environmentVariable] = 'standard';
+
+    (() => getAwsSource()).should.throw(
+      'The configured AWS bedrock config environment is not implemented.');
+  });
+
+  it('rejects an invalid maxWaitMs before discovery', () => {
+    source.enabled = true;
+    source.environment = 'nitro';
+    source.maxWaitMs = -1;
+
+    (() => getAwsSource()).should.throw(
+      'The AWS bedrock config maxWaitMs is invalid.');
   });
 
   it('rejects an unsupported environment before discovery', () => {
