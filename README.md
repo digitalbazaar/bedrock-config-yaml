@@ -114,6 +114,78 @@ gzip, startup fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than
 falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
 `BEDROCK_CONFIG` behaves exactly as before.
 
+## Loading From AWS
+
+The AWS source can load the combined YAML config for a Nitro Enclave.
+If `BEDROCK_CONFIG_GZIP` or `BEDROCK_CONFIG` is set, Bedrock uses that value
+instead of AWS. In an enclave, these environment values are part of the
+measured image. When neither is set, Bedrock uses AWS if the source is enabled.
+Otherwise, it reads the config files.
+
+The final Docker image selects the source before Bedrock starts:
+
+```dockerfile
+ENV BEDROCK_CONFIG_YAML_SOURCES_AWS_ENABLED=true
+ENV BEDROCK_CONFIG_YAML_SOURCES_AWS_ENVIRONMENT=nitro
+```
+
+These variables set the defaults for `sources.aws.enabled` and
+`sources.aws.environment` in `bedrock.config['config-yaml']`. Only the string
+`true` enables the source. Applications can also set these config values
+directly before the configuration events run.
+
+The AWS source reads the EC2 instance tag named `BedrockConfigSecretId` by
+default. This tag holds a secret name or ARN, not the secret itself. Its value
+is passed to Secrets Manager as `SecretId`. The tag name may be
+overridden with `sources.aws.secretIdTag`.
+
+`sources.aws.maxWaitMs` sets the time limit for loading the config. The default
+is `300000` milliseconds (five minutes). This limit covers instance metadata
+lookups, AWS requests, and waits between retries. A value of `0` allows one
+attempt with a 30-second limit and no retries.
+
+Set `environment` to `'nitro'`, the supported AWS environment. Bedrock must
+load and decrypt a valid config before startup can finish. If loading fails,
+startup stops.
+
+Applications that enable the AWS source must install `@bedrock/aws-kms` and
+`@aws-sdk/client-secrets-manager`, including the native kmstool runtime used
+by `@bedrock/aws-kms`. These packages are optional peer dependencies. They are
+loaded only when Bedrock uses the AWS source.
+
+Choose the source in application code or the image's environment variables
+before loading the config. The loaded config must not define
+`config-yaml.sources`.
+
+The loader retries errors that may clear as AWS services become ready. All
+retries share the time limit set by `sources.aws.maxWaitMs`:
+
+| Step | Errors that allow a retry |
+| --- | --- |
+| Region lookup | Network, not found, timeout, credentials not ready |
+| Instance tag lookup | Network, not found, timeout |
+| Secrets Manager | Network, not found, timeout, credentials not ready, access denied |
+| KMS | Network, timeout, credentials not ready, access denied |
+
+Secrets Manager and KMS also allow a retry when the SDK reports that its
+retries are exhausted or AWS returns a 5xx response. Retrying access denied
+allows time for new IAM policies to take effect. Invalid source settings,
+invalid envelopes, failed ciphertext authentication, other decrypt errors,
+and invalid YAML stop startup without a retry.
+
+Retry logs show the step, error name, attempt number, and wait before the next
+attempt. A timeout error includes the step and error name that caused it.
+
+The source reads a version-1 encrypted envelope from Secrets Manager in the
+application's default AWS region. It uses the `@bedrock/aws-kms` client named
+`config-yaml` to decrypt the data key with Nitro attestation. The KMS `KeyId`
+parameter is set to the envelope's `kmsKeyId`, so KMS checks that the key
+matches. The loader then decrypts the YAML with AES-256-GCM, checks its SHA-256
+hash, and parses and merges the combined config.
+
+`@bedrock/aws-kms` reads the EC2 Instance Metadata Service (IMDS) using
+`@digitalbazaar/http-client`.
+
 ## Config Value Transformers
 
 A config may compute individual values at load time using *transformers*,
