@@ -349,13 +349,5 @@ describe('bedrock-config-yaml', () => {
           .and(sinon.match('doesnotexist.yaml'))
     }));
   });
-  it('has disabled AWS source defaults', () => {
-    const {aws} = config['config-yaml'].sources;
-    expect(aws).to.deep.equal({
-      enabled: false,
-      environment: null,
-      maxWaitMs: 300000,
-      secretIdTag: 'BedrockConfigSecretId'
-    });
-  });
+
 });

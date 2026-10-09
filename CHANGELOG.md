@@ -3,21 +3,10 @@
 ## Unreleased
 
 ### Added
-- Add the optional `config-yaml.sources.aws` source for Nitro Enclaves.
-- Load the version-1 encrypted YAML envelope from Secrets Manager using the
-  `BedrockConfigSecretId` EC2 tag and `@bedrock/aws-kms`.
-
-### Changed
-- Initialize the AWS source from
-  `BEDROCK_CONFIG_YAML_SOURCES_AWS_ENABLED=true` and
-  `BEDROCK_CONFIG_YAML_SOURCES_AWS_ENVIRONMENT=nitro`.
-- Set the AWS config loading time limit with `sources.aws.maxWaitMs`,
-  defaulting to 300000 milliseconds.
-- Use `Uint8Array` for byte-oriented APIs.
-- Use standard error names and the config loading step to decide when to retry.
-- Retry region lookups, credentials that are not ready, and temporary Secrets
-  Manager or KMS failures within the time limit.
-- Require the config to load from the selected source before startup can finish.
+- Add `addConfigurationSource({name, getConfig})` for application-provided
+  combined YAML configuration sources.
+- Fetch each source once per process and apply its core and app sections during
+  the corresponding Bedrock configuration events.
 
 ## 4.6.0 - 2026-08-24
 
