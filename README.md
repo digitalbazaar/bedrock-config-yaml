@@ -1,12 +1,13 @@
 # Bedrock YAML Configuration _(@bedrock/config-yaml)_
 
-This module is used to layer a deployment Bedrock configuration defined in
-a YAML file onto `bedrock.config`. Values defined in the YAML config may add
-and overwrite values in `bedrock.config`. The YAML configuration is applied
-after all conventional Bedrock module configuration has been completed. If
-there is no YAML configuration file found in the location specified by the
-`bedrock-config-yaml` config, Bedrock startup proceeds normally and no
-configuration changes are applied.
+This module merges a deployment YAML config into `bedrock.config`. YAML values
+can add or overwrite values after the application's modules have configured
+Bedrock. The config can come from files, an environment variable, or a function
+registered by the application.
+
+With no environment config or active registered source, Bedrock reads the
+configured YAML files. If those files are missing, startup continues with the
+application's configuration.
 
 ## Install
 
@@ -112,79 +113,57 @@ is ambiguous and fails at startup rather than silently ignoring one of them.
 The value is decoded strictly: if `BEDROCK_CONFIG_GZIP` is set but is not valid
 gzip, startup fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than
 falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
-`BEDROCK_CONFIG` behaves exactly as before.
+`BEDROCK_CONFIG` supplies base64-encoded YAML.
 
-## Loading From AWS
+## Configuration sources
 
-The AWS source can load the combined YAML config for a Nitro Enclave.
-If `BEDROCK_CONFIG_GZIP` or `BEDROCK_CONFIG` is set, Bedrock uses that value
-instead of AWS. In an enclave, these environment values are part of the
-measured image. When neither is set, Bedrock uses AWS if the source is enabled.
-Otherwise, it reads the config files.
+An application can register a function that loads its combined YAML config.
+Import `@bedrock/config-yaml` last and register the function before calling
+`bedrock.start()`:
 
-The final Docker image selects the source before Bedrock starts:
+```js
+import * as bedrock from '@bedrock/core';
+import {readFile} from 'node:fs/promises';
 
-```dockerfile
-ENV BEDROCK_CONFIG_YAML_SOURCES_AWS_ENABLED=true
-ENV BEDROCK_CONFIG_YAML_SOURCES_AWS_ENVIRONMENT=nitro
+// import application modules here
+
+// load YAML after the application's configuration handlers
+import {addConfigurationSource} from '@bedrock/config-yaml';
+
+addConfigurationSource({
+  name: 'deployment',
+  getConfig: async () => readFile('/etc/deployment.yaml', 'utf8')
+});
+
+bedrock.start();
 ```
 
-These variables set the defaults for `sources.aws.enabled` and
-`sources.aws.environment` in `bedrock.config['config-yaml']`. Only the string
-`true` enables the source. Applications can also set these config values
-directly before the configuration events run.
+`name` must be unique and `getConfig` must be a function. The function returns
+YAML with a `core` section, an `app` section, or both:
 
-The AWS source reads the EC2 instance tag named `BedrockConfigSecretId` by
-default. This tag holds a secret name or ARN, not the secret itself. Its value
-is passed to Secrets Manager as `SecretId`. The tag name may be
-overridden with `sources.aws.secretIdTag`.
+```yaml
+core:
+  core:
+    workers: 1
+app:
+  server:
+    port: 8080
+```
 
-`sources.aws.maxWaitMs` sets the time limit for loading the config. The default
-is `300000` milliseconds (five minutes). This limit covers instance metadata
-lookups, AWS requests, and waits between retries. A value of `0` allows one
-attempt with a 30-second limit and no retries.
+Each function is called once per process during startup. Bedrock awaits the
+functions and uses the same parsed document for both configuration events.
+It applies `core` during `bedrock-cli.parsed` and `app` during
+`bedrock.configure`. Config value transformers work in these sections.
 
-Set `environment` to `'nitro'`, the supported AWS environment. Bedrock must
-load and decrypt a valid config before startup can finish. If loading fails,
-startup stops.
+Sources are merged in registration order. Later sources overwrite matching
+values from earlier sources. Return `null` or `undefined` to skip a source.
+If all sources are skipped, Bedrock loads the configured YAML files. If either
+`BEDROCK_CONFIG` or `BEDROCK_CONFIG_GZIP` is set, Bedrock uses that environment
+config without calling registered sources.
 
-Applications that enable the AWS source must install `@bedrock/aws-kms` and
-`@aws-sdk/client-secrets-manager`, including the native kmstool runtime used
-by `@bedrock/aws-kms`. These packages are optional peer dependencies. They are
-loaded only when Bedrock uses the AWS source.
-
-Choose the source in application code or the image's environment variables
-before loading the config. The loaded config must not define
-`config-yaml.sources`.
-
-The loader retries errors that may clear as AWS services become ready. All
-retries share the time limit set by `sources.aws.maxWaitMs`:
-
-| Step | Errors that allow a retry |
-| --- | --- |
-| Region lookup | Network, not found, timeout, credentials not ready |
-| Instance tag lookup | Network, not found, timeout |
-| Secrets Manager | Network, not found, timeout, credentials not ready, access denied |
-| KMS | Network, timeout, credentials not ready, access denied |
-
-Secrets Manager and KMS also allow a retry when the SDK reports that its
-retries are exhausted or AWS returns a 5xx response. Retrying access denied
-allows time for new IAM policies to take effect. Invalid source settings,
-invalid envelopes, failed ciphertext authentication, other decrypt errors,
-and invalid YAML stop startup without a retry.
-
-Retry logs show the step, error name, attempt number, and wait before the next
-attempt. A timeout error includes the step and error name that caused it.
-
-The source reads a version-1 encrypted envelope from Secrets Manager in the
-application's default AWS region. It uses the `@bedrock/aws-kms` client named
-`config-yaml` to decrypt the data key with Nitro attestation. The KMS `KeyId`
-parameter is set to the envelope's `kmsKeyId`, so KMS checks that the key
-matches. The loader then decrypts the YAML with AES-256-GCM, checks its SHA-256
-hash, and parses and merges the combined config.
-
-`@bedrock/aws-kms` reads the EC2 Instance Metadata Service (IMDS) using
-`@digitalbazaar/http-client`.
+Register sources before configuration loads. Duplicate names and registration
+after loading begins raise an error. A source that throws or returns invalid
+YAML stops startup.
 
 ## Config Value Transformers
 
