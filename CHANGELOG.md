@@ -1,5 +1,13 @@
 # bedrock-config-yaml ChangeLog
 
+## Unreleased
+
+### Added
+- Add `addConfigurationSource({name, getConfig})` for application-provided
+  combined YAML configuration sources.
+- Fetch each source once per process and apply its core and app sections during
+  the corresponding Bedrock configuration events.
+
 ## 4.6.0 - 2026-08-24
 
 ### Added

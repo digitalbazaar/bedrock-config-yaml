@@ -349,4 +349,5 @@ describe('bedrock-config-yaml', () => {
           .and(sinon.match('doesnotexist.yaml'))
     }));
   });
+
 });

@@ -1,12 +1,13 @@
 # Bedrock YAML Configuration _(@bedrock/config-yaml)_
 
-This module is used to layer a deployment Bedrock configuration defined in
-a YAML file onto `bedrock.config`. Values defined in the YAML config may add
-and overwrite values in `bedrock.config`. The YAML configuration is applied
-after all conventional Bedrock module configuration has been completed. If
-there is no YAML configuration file found in the location specified by the
-`bedrock-config-yaml` config, Bedrock startup proceeds normally and no
-configuration changes are applied.
+This module merges a deployment YAML config into `bedrock.config`. YAML values
+can add or overwrite values after the application's modules have configured
+Bedrock. The config can come from files, an environment variable, or a function
+registered by the application.
+
+With no environment config or active registered source, Bedrock reads the
+configured YAML files. If those files are missing, startup continues with the
+application's configuration.
 
 ## Install
 
@@ -112,7 +113,57 @@ is ambiguous and fails at startup rather than silently ignoring one of them.
 The value is decoded strictly: if `BEDROCK_CONFIG_GZIP` is set but is not valid
 gzip, startup fails with a `BEDROCK_CONFIG_GZIP is invalid` error rather than
 falling back to `BEDROCK_CONFIG`. When `BEDROCK_CONFIG_GZIP` is unset,
-`BEDROCK_CONFIG` behaves exactly as before.
+`BEDROCK_CONFIG` supplies base64-encoded YAML.
+
+## Configuration sources
+
+An application can register a function that loads its combined YAML config.
+Import `@bedrock/config-yaml` last and register the function before calling
+`bedrock.start()`:
+
+```js
+import * as bedrock from '@bedrock/core';
+import {readFile} from 'node:fs/promises';
+
+// import application modules here
+
+// load YAML after the application's configuration handlers
+import {addConfigurationSource} from '@bedrock/config-yaml';
+
+addConfigurationSource({
+  name: 'deployment',
+  getConfig: async () => readFile('/etc/deployment.yaml', 'utf8')
+});
+
+bedrock.start();
+```
+
+`name` must be unique and `getConfig` must be a function. The function returns
+YAML with a `core` section, an `app` section, or both:
+
+```yaml
+core:
+  core:
+    workers: 1
+app:
+  server:
+    port: 8080
+```
+
+Each function is called once per process during startup. Bedrock awaits the
+functions and uses the same parsed document for both configuration events.
+It applies `core` during `bedrock-cli.parsed` and `app` during
+`bedrock.configure`. Config value transformers work in these sections.
+
+Sources are merged in registration order. Later sources overwrite matching
+values from earlier sources. Return `null` or `undefined` to skip a source.
+If all sources are skipped, Bedrock loads the configured YAML files. If either
+`BEDROCK_CONFIG` or `BEDROCK_CONFIG_GZIP` is set, Bedrock uses that environment
+config without calling registered sources.
+
+Register sources before configuration loads. Duplicate names and registration
+after loading begins raise an error. A source that throws or returns invalid
+YAML stops startup.
 
 ## Config Value Transformers
 
