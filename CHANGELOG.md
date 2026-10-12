@@ -1,6 +1,6 @@
 # bedrock-config-yaml ChangeLog
 
-## Unreleased
+## 4.7.0 - 2026-10-12
 
 ### Added
 - Add `addConfigurationSource({name, getConfig})` for application-provided
