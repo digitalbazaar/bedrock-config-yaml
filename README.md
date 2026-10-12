@@ -308,7 +308,7 @@ config['config-yaml'].transformers.cache = true;
 
 ## License
 
-[Apache License, Version 2.0](LICENSE) Copyright 2011-2024 Digital Bazaar, Inc.
+[Apache License, Version 2.0](LICENSE) Copyright 2011-2026 Digital Bazaar, Inc.
 
 Other Bedrock libraries are available under a non-commercial license for uses
 such as self-study, research, personal projects, or for evaluation purposes.
